@@ -1,0 +1,11 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.egg-info/
+dist/
+.expo/
+ios/
+android/
+src/

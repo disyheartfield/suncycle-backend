@@ -1,0 +1,24 @@
+{
+  "name": "suncycle",
+  "version": "1.0.0",
+  "main": "App.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios"
+  },
+  "dependencies": {
+    "expo": "~51.0.0",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/native-stack": "^6.9.26",
+    "react-native-screens": "~3.31.1",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-maps": "1.14.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0"
+  }
+}
