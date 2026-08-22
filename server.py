@@ -12,7 +12,9 @@ import sys
 import os
 from datetime import datetime
 from typing import Optional
+from dotenv import load_dotenv
 
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 # Add suncycle engine to path — adjust if your files are elsewhere
 SUNCYCLE_PATH = os.path.join(os.path.dirname(__file__), "..", "suncycle")
 sys.path.insert(0, SUNCYCLE_PATH)
@@ -31,7 +33,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GRAPHHOPPER_API_KEY = "ae661b79-172e-40b8-9366-9f02f6bb04ca"
+GRAPHHOPPER_API_KEY = os.getenv("GRAPHHOPPER_API_KEY")
+
+if not GRAPHHOPPER_API_KEY:
+    raise RuntimeError("GRAPHHOPPER_API_KEY is not configured")
 
 
 # ── Request / Response models ──────────────────────────────────────────────────
