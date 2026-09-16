@@ -11,29 +11,35 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from routing import RoutingError, fetch_routes, geocode, sample_points
+from routing import RoutingError, fetch_routes, search_locations, sample_points
 from solar import sun_position
 
 load_dotenv(Path(__file__).with_name(".env"))
 GRAPHHOPPER_API_KEY = os.getenv("GRAPHHOPPER_API_KEY", "").strip()
+GEOAPIFY_API_KEY = os.getenv("GEOAPIFY_API_KEY", "").strip()
 if not GRAPHHOPPER_API_KEY or GRAPHHOPPER_API_KEY == "replace_with_your_graphhopper_api_key":
     raise RuntimeError("Set GRAPHHOPPER_API_KEY in the backend .env file, then restart.")
 
 LONDON = ZoneInfo("Europe/London")
-app = FastAPI(title="SunCycle API", version="2.0.0")
+app = FastAPI(title="SunCycle API", version="3.0.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
 
 
+class Location(BaseModel):
+    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+
+
 class RouteRequest(BaseModel):
-    start: str = Field(min_length=1, max_length=16)
-    end: str = Field(min_length=1, max_length=16)
+    start: Location
+    end: Location
     departure_time: Optional[str] = None  # legacy app: HH:MM, today in London
     departure_at: Optional[str] = None  # preferred: ISO timestamp with timezone
 
@@ -62,7 +68,8 @@ def get_routes(req: RouteRequest):
     # A normal def lets FastAPI run the blocking HTTP calls in its thread pool.
     departure = parse_departure(req)
     try:
-        start, end = geocode(req.start), geocode(req.end)
+        start = (req.start.latitude, req.start.longitude)
+        end = (req.end.latitude, req.end.longitude)
         routes = fetch_routes(start, end, GRAPHHOPPER_API_KEY)
         fastest = min(routes, key=lambda route: route.duration_s).id
         result = [{
@@ -89,6 +96,16 @@ def get_routes(req: RouteRequest):
         "start_coords": list(start),
         "end_coords": list(end),
     }
+
+
+@app.get("/locations/search")
+def locations(text: str = Query(min_length=3, max_length=200)):
+    if not GEOAPIFY_API_KEY or GEOAPIFY_API_KEY.startswith("replace_with_"):
+        raise HTTPException(503, "Set GEOAPIFY_API_KEY in the backend .env file, then restart.")
+    try:
+        return {"results": search_locations(text, GEOAPIFY_API_KEY)}
+    except RoutingError as error:
+        raise HTTPException(error.status_code, str(error)) from None
 
 
 @app.get("/health")

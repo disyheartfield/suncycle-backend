@@ -19,3 +19,4 @@ def sun_position(lat, lng, departure):
         "altitude": round(altitude, 1),
         "compass": compass[round(azimuth / 45) % 8],
     }
+
